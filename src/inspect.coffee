@@ -1,11 +1,18 @@
 require 'coffee-mate/global'
 Tail = require('./tail').Tail
 fs = require 'fs'
+path = require 'path'
 {ls, echo} = require 'shelljs'
 
 currentTime = ->
     (t = new Date).setMinutes(t.getMinutes() - t.getTimezoneOffset())
     t.toISOString().replace('T', ' ').replace('.', ',')[11...-5]
+
+isDir = (pth) ->
+    try fs.statSync(pth).isDirectory() catch then false
+
+isFile = (pth) ->
+    try fs.statSync(pth).isFile() catch then false
 
 #log_dir = "C:\\Users\\Luo\\Documents\\My Tableau Repository\\Logs\\"
 #log_files = [
@@ -17,7 +24,11 @@ currentTime = ->
 
 homeRoot = str echo('~')
 tableauRepos = ls('~/Documents').filter((fname) -> fname.match /\sTableau\s/)
-getLogDir = (repoName) -> homeRoot + '\\Documents\\' + repoName + '\\Logs\\'
+getLogDir = (repoName) ->
+    pr = path.join(homeRoot, 'Documents', repoName)
+    ps = ['Logs', '日志'].map((s) -> path.join(pr, s))
+    return head ps.filter(isDir)
+
 getLogFileList = (dir_path) ->
     ls(dir_path).filter((fname) -> fname.match /\.txt$/).filter((fname) -> not (fname.match /_bk\.txt$/))
 
@@ -48,7 +59,7 @@ echoQuery = ({repoName, fname, line}) ->
 
 lineReaders = list concat tableauRepos.map (repoName) ->
     dirPath = getLogDir(repoName)
-    getLogFileList(dirPath).map((fname) -> {repoName, fname, reader: new Tail(dirPath + '\\' + fname)})
+    getLogFileList(dirPath).map((fname) -> {repoName, fname, reader: new Tail(path.join(dirPath, fname))})
 
 startWatch = ->
     lineReaders.forEach ({repoName, fname, reader}) ->
