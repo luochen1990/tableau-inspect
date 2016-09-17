@@ -65,7 +65,7 @@ startWatch = ->
     lineReaders.forEach ({repoName, dirName, fname, reader}) ->
         log "Watching: #{path.join(dirName, fname)} (#{repoName})"
         reader.on 'line', (line) ->
-            echoQuery({repoName, fname, line})
+            echoQuery({repoName, dirName, fname, line})
 
 module.exports = {tableauRepos, getLogDirs, getLogFileList, startWatch}
 
