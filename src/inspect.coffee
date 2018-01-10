@@ -37,35 +37,38 @@ getLogFileList = (dir_path) ->
 #log -> tableauRepos.map(getLogDirs)
 log 'Tableau Repos:', prettyJson tableauRepos
 
-wrapWithDivider = (msg) -> (proc) ->
-    spliter = list(take(msg.length + 3)(repeat '-')).join('')
-    console.log spliter
-    log.info msg
-    do proc
-    log.info msg
-    console.log spliter
+logEvents = do ->
+    lineReaders = list concat tableauRepos.map (repoName) ->
+        list concat getLogDirs(repoName).map ({dirName, dirPath}) ->
+            getLogFileList(dirPath).map (fname) ->
+                {repoName, dirName, fname, reader: new Tail(path.join(dirPath, fname))}
 
-echoQuery = ({repoName, dirName, fname, line}) ->
-    try log_content = JSON.parse(line)
-    if log_content?
-        queries = log_content?.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']).concat([log_content?.v?['query'], log_content?.v?['query-compiled']]).filter((x) -> x?)
-        if queries? and queries.length > 0
-            console.log '\n'
-            wrapWithDivider("#{currentTime()} FROM #{path.join(dirName, fname)} (#{repoName})") ->
-                console.log '\n'
-                for q in queries
-                    console.log q, '\n'
-
-lineReaders = list concat tableauRepos.map (repoName) ->
-    list concat getLogDirs(repoName).map ({dirName, dirPath}) ->
-        getLogFileList(dirPath).map (fname) ->
-            {repoName, dirName, fname, reader: new Tail(path.join(dirPath, fname))}
+    subscribe: (callback) ->
+        lineReaders.forEach ({repoName, dirName, fname, reader}) ->
+            log "Watching: #{path.join(dirName, fname)} (#{repoName})"
+            reader.on 'line', (line) ->
+                callback({repoName, dirName, fname, line})
 
 startWatch = ->
-    lineReaders.forEach ({repoName, dirName, fname, reader}) ->
-        log "Watching: #{path.join(dirName, fname)} (#{repoName})"
-        reader.on 'line', (line) ->
-            echoQuery({repoName, dirName, fname, line})
+    wrapWithDivider = (msg) -> (proc) ->
+        spliter = list(take(msg.length + 3)(repeat '-')).join('')
+        console.log spliter
+        log.info msg
+        do proc
+        log.info msg
+        console.log spliter
+
+    logEvents.subscribe ({repoName, dirName, fname, line}) ->
+        if line.indexOf('"query') >= 0
+            try logObj = JSON.parse(line)
+            if logObj?
+                queries = logObj?.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']).concat([logObj?.v?['query'], logObj?.v?['query-compiled']]).filter((x) -> x?)
+                if queries? and queries.length > 0
+                    console.log '\n'
+                    wrapWithDivider("#{currentTime()} FROM #{path.join(dirName, fname)} (#{repoName})") ->
+                        console.log "\nKey: #{logObj?.k ? '?'}; Elapsed: #{logObj?.v?.elapsed ? '?'}s\n"
+                        for q in queries
+                            console.log q, '\n'
 
 module.exports = {tableauRepos, getLogDirs, getLogFileList, startWatch}
 
