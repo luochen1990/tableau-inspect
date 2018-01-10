@@ -48,7 +48,7 @@ wrapWithDivider = (msg) -> (proc) ->
 echoQuery = ({repoName, dirName, fname, line}) ->
     try log_content = JSON.parse(line)
     if log_content?
-        queries = log_content?.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']).filter((x) -> x?)
+        queries = log_content?.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']).concat([log_content?.v?['query'], log_content?.v?['query-compiled']]).filter((x) -> x?)
         if queries? and queries.length > 0
             console.log '\n'
             wrapWithDivider("#{currentTime()} FROM #{path.join(dirName, fname)} (#{repoName})") ->
