@@ -61,12 +61,12 @@ startWatch = ->
     logEvents.subscribe ({repoName, dirName, fname, line}) ->
         if line.indexOf('"query') >= 0
             try logObj = JSON.parse(line)
-            if logObj?
-                queries = logObj?.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']).concat([logObj?.v?['query'], logObj?.v?['query-compiled']]).filter((x) -> x?)
+            if logObj? and logObj.k isnt 'begin-query'
+                queries = [logObj.v?['query'], logObj.v?['query-compiled']].concat(logObj.v?.jobs?.map((x) -> x['query'] ? x['query-compiled']) ? []).filter((x) -> x?)
                 if queries? and queries.length > 0
                     console.log '\n'
                     wrapWithDivider("#{currentTime()} FROM #{path.join(dirName, fname)} (#{repoName})") ->
-                        console.log "\nKey: #{logObj?.k ? '?'}; Elapsed: #{logObj?.v?.elapsed ? '?'}s\n"
+                        console.log "\nKey: #{logObj.k ? '?'}; Elapsed: #{logObj.v?.elapsed ? '?'}s\n"
                         for q in queries
                             console.log q, '\n'
 
