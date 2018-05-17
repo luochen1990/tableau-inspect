@@ -23,21 +23,21 @@ class Tail extends events.EventEmitter
           @emit("line", chunk) for chunk in parts
 
   constructor:(@filename, options = {}) ->
+    super()
     {@separator = /[\r]{0,1}\n/,  @fsWatchOptions = {}, @fromBeginning=false, @follow=true, @logger } = options
 
     if @logger
       @logger.info("Tail starting:")
       @logger.info("filename:", @filename)
 
-    
     @buffer = ''
     @internalDispatcher = new events.EventEmitter()
     @queue = []
     @isWatching = false
-    
+
     @internalDispatcher.on 'next',=>
       @readBlock()
- 
+
     pos = 0 if @fromBeginning
     @watch(pos)
 
@@ -67,7 +67,6 @@ class Tail extends events.EventEmitter
       else
         @logger.error("'rename' event for #{@filename}. File not available.") if @logger
         @emit("error", "'rename' event for #{@filename}. File not available.")
-      
 
   watchFileEvent: (curr, prev) ->
     if curr.size > prev.size

@@ -22,20 +22,20 @@ isFile = (pth) ->
 #    'tabprotosrv_1.txt'
 #]
 
-homeRoot = str echo('~')
-tableauRepos = ls('~/Documents').filter((fname) -> fname.match /\sTableau\s/)
+searchRoot = str echo('~/Documents')
+tableauRepos = ls(searchRoot).filter((fname) -> fname.match /\sTableau\s/)
 getLogDirs = (repoName) ->
-    pr = path.join(homeRoot, 'Documents', repoName)
+    pr = path.join(searchRoot, repoName)
     ps = ['Logs', '日志'].map((s) -> {dirName: s, dirPath: path.join(pr, s)})
     return ps.filter(({dirPath}) -> isDir(dirPath))
 
 getLogFileList = (dir_path) ->
-    ls(dir_path).filter((fname) -> fname.match /\.txt$/).filter((fname) -> not (fname.match /_bk\.txt$/))
+    ls(dir_path).filter((fname) -> fname.match /\.(txt|log)$/).filter((fname) -> not (fname.match /_bk\.txt$/))
 
-#log -> homeRoot
+#log -> searchRoot
 #log -> tableauRepos
 #log -> tableauRepos.map(getLogDirs)
-log 'Tableau Repos:', prettyJson tableauRepos
+log -> tableauRepos
 
 logEvents = do ->
     lineReaders = list concat tableauRepos.map (repoName) ->
@@ -50,6 +50,9 @@ logEvents = do ->
                 callback({repoName, dirName, fname, line})
 
 startWatch = ->
+    verbose = process.argv.indexOf('-v') >= 0 or process.argv.indexOf('--verbose') >= 0
+    log -> verbose
+
     wrapWithDivider = (msg) -> (proc) ->
         spliter = list(take(msg.length + 3)(repeat '-')).join('')
         console.log spliter
@@ -59,6 +62,7 @@ startWatch = ->
         console.log spliter
 
     logEvents.subscribe ({repoName, dirName, fname, line}) ->
+        log line if verbose
         if line.indexOf('"query') >= 0
             try logObj = JSON.parse(line)
             if logObj? and logObj.k isnt 'begin-query'

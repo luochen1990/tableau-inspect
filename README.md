@@ -55,5 +55,5 @@ Compatibility
 -------------
 
 - Tested on Windows 10 and MacOS 10.13
-- Tested on Tableau 9.2 and Tableau 10.4
+- Tested on Tableau 9.2, Tableau 10.4, Tableau 2018.1
 
